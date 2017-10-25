@@ -45,10 +45,13 @@ import org.apache.commons.lang.StringUtils;
 import org.wso2.carbon.extension.identity.helper.FederatedAuthenticatorUtil;
 import org.wso2.carbon.identity.application.authentication.framework.*;
 import org.wso2.carbon.identity.application.authentication.framework.exception.*;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.SequenceConfig;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.StepConfig;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.application.common.model.Property;
+import org.wso2.carbon.identity.application.common.model.Claim;
+import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.sso.saml.util.SAMLSSOUtil;
 import org.wso2.carbon.identity.application.authenticator.oidc.OpenIDConnectAuthenticator;
 import org.wso2.carbon.identity.authenticator.emailotp.EmailOTPAuthenticator;
@@ -86,15 +89,10 @@ public class EmailOTPLoA3Authenticator extends EmailOTPAuthenticator implements 
             context.setProperty("LoA", loa);
 
             if(loa.equals(LOA2)) {
-
                 AuthenticatedUser authenticatedUser = (AuthenticatedUser) context.getProperty(EmailOTPAuthenticatorConstants.AUTHENTICATED_USER);
                 processFirstStepOnly(authenticatedUser, context);
-
-
             } else {
-
                 super.initiateAuthenticationRequest(request, response, context);
-
             }
 
 
@@ -113,12 +111,30 @@ public class EmailOTPLoA3Authenticator extends EmailOTPAuthenticator implements 
             FederatedAuthenticatorUtil.updateAuthenticatedUserInStepConfig(context, authenticatedUser);
             context.setProperty(EmailOTPAuthenticatorConstants.AUTHENTICATION, EmailOTPAuthenticatorConstants.FEDERETOR);
         }
+        
+        SequenceConfig sequenceConfig = context.getSequenceConfig();
+        printUserAttributes(sequenceConfig.getApplicationConfig().getClaimMappings());
     }
 
     protected void processAuthenticationResponse(HttpServletRequest request, HttpServletResponse response, AuthenticationContext context) throws AuthenticationFailedException {
         String loa = (String)context.getProperty("LoA");
         log.info("Response to LoA: " + loa);
+
+        SequenceConfig sequenceConfig = context.getSequenceConfig();
+        printUserAttributes(sequenceConfig.getApplicationConfig().getClaimMappings());
+
         super.processAuthenticationResponse(request, response, context);
+    }
+
+    private void printUserAttributes(Map<String, String> map) {
+        try {
+            log.info("Attributes: " + map.size());
+            for (Map.Entry entry : map.entrySet()) {
+                log.info(entry.getKey() + " = " + entry.getValue());
+            }
+        } catch(Exception e) {
+            log.info("ERROR " + e.getMessage());
+        }
     }
  
 
