@@ -20,9 +20,9 @@
 
 package it.linfaservice.wso2.authenticator.emailotploa3;
 
-
-public abstract class EmailOTPLoA3AuthenticatorConstants {
+public class EmailOTPLoA3AuthenticatorConstants {
 
     public static final String AUTHENTICATOR_NAME = "EmailOTPLoA3";
     public static final String AUTHENTICATOR_FRIENDLY_NAME = "Email OTP LoA3";
+    public static final String ATTRIBUTESRETURN_CONFIRMED = "EmailOTPLoA3_ARCONFIRMED";
 }
