@@ -9,6 +9,7 @@ EmailOTPLoA3 authenticator is an outbound local authenticator for wso2 providing
 
 ## Setup
 - Configure EmailOTP Authenticator and EmailOTP Provider as explained in https://docs.wso2.com/display/ISCONNECTORS/Configuring+EmailOTP+Authenticator
+- Deploy the endpoint directory emailotploa3authenticationendpoint into the <IS_HOME>/repository/deployment/server/webapps directory
 - Place the file target/it.linfaservice.wso2.authenticator.emailotploa3-1.0.0.jar into the <IS_HOME>/repository/components/dropins directory
 - Add the following configuration in the &lt;IS_HOME&gt;/repository/conf/identity/application-authentication.xml file under the &lt;AuthenticatorConfigs&gt; section (customize values for parameters AuthnContextClassRef *LoA2*, *LoA3*, *LoA4*)
  ```
@@ -27,6 +28,8 @@ EmailOTPLoA3 authenticator is an outbound local authenticator for wso2 providing
 			<Parameter name="AuthnContextClassRefLoA2">LoA2</Parameter>
 			<Parameter name="AuthnContextClassRefLoA3">LoA3</Parameter>
 			<Parameter name="AuthnContextClassRefLoA4">LoA4</Parameter>
+			<Parameter name="AttributesConfirmPage">https://localhost:9443/emailotploa3authenticationendpoint/attributesConfirm.jsp</Parameter>
+			<Parameter name="ErrorPage">https://localhost:9443/emailotploa3authenticationendpoint/attributesConfirmError.jsp</Parameter>
 		</AuthenticatorConfig>
   ```
   - Configure Identity Provider and Service Provider for EmailOTPLoA3 as explained for EmailOTP in https://docs.wso2.com/display/ISCONNECTORS/Configuring+EmailOTP+Authenticator
