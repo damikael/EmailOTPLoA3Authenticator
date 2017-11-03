@@ -87,8 +87,14 @@ public class EmailOTPLoA3Authenticator extends EmailOTPAuthenticator implements 
  
     @Override
     public AuthenticatorFlowStatus process(HttpServletRequest request, HttpServletResponse response, AuthenticationContext context) throws AuthenticationFailedException, LogoutFailedException {
+        Map<String, String> params = getAuthenticatorConfig().getParameterMap();
+        String LOA2 = (String)params.get("AuthnContextClassRefLoA2");
+        String LOA3 = (String)params.get("AuthnContextClassRefLoA3");
+        String LOA4 = (String)params.get("AuthnContextClassRefLoA4");
+
         log.info("process");
         log.info("Request: ");
+        
         Enumeration e = request.getParameterNames();
         while(e.hasMoreElements()) {
             log.info((String)e.nextElement());
@@ -97,17 +103,28 @@ public class EmailOTPLoA3Authenticator extends EmailOTPAuthenticator implements 
         // if the logout request comes, then no need to go through and complete the flow.
         if (context.isLogoutRequest()) {
             return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
+
+        } else if(
+            !getLoA(context).equals(LOA2) &&
+            !getLoA(context).equals(LOA3) &&
+            !getLoA(context).equals(LOA4)
+            ) {
+                    sendToErrorPage(request, response, context, "Requested level is not available.");
+                    return AuthenticatorFlowStatus.INCOMPLETE;                
+    
         } else if (StringUtils.isNotEmpty(request.getParameter(EmailOTPAuthenticatorConstants.EMAIL_ADDRESS))) {
             log.info("Requested EMAIL_ADDRESS");
             // if the request comes with EMAIL ADDRESS, it will go through this flow.
             initiateAuthenticationRequest(request, response, context);
             return AuthenticatorFlowStatus.INCOMPLETE;
+
         } else if (StringUtils.isEmpty(request.getParameter(EmailOTPAuthenticatorConstants.CODE))
                     && StringUtils.isEmpty(request.getParameter(EmailOTPLoA3AuthenticatorConstants.ATTRIBUTESRETURN_CONFIRMED))) {
             log.info("Requested CODE");
             // if the request comes with code, it will go through this flow.
             initiateAuthenticationRequest(request, response, context);
             log.info("Requested CODE - Authenticator: " + context.getProperty(EmailOTPAuthenticatorConstants.AUTHENTICATION));
+
             if (context.getProperty(EmailOTPAuthenticatorConstants.AUTHENTICATION)
                     .equals(EmailOTPAuthenticatorConstants.AUTHENTICATOR_NAME)) {
                 // if the request comes with authentication is EmailOTP, it will go through this flow.
@@ -118,6 +135,7 @@ public class EmailOTPLoA3Authenticator extends EmailOTPAuthenticator implements 
                 sendToConfirmPage(request, response, context);
                 return AuthenticatorFlowStatus.INCOMPLETE;
             }
+
         } else if (!StringUtils.isEmpty((String)context.getProperty(EmailOTPLoA3AuthenticatorConstants.ATTRIBUTESRETURN_CONFIRMED))) {
             String confirmrequest = (String)context.getProperty(EmailOTPLoA3AuthenticatorConstants.ATTRIBUTESRETURN_CONFIRMED);
             log.info("Requested CONFIRM : " + confirmrequest);
@@ -159,20 +177,13 @@ public class EmailOTPLoA3Authenticator extends EmailOTPAuthenticator implements 
 
         try {
 
-            //throw new AuthenticationFailedException("Non è stata fornita l'autorizzazione all'invio dei dati");
-
-            String saml = context.getAuthenticationRequest().getRequestQueryParam("SAMLRequest")[0];
-            String saml_decoded = SAMLSSOUtil.decode(saml);
-            Pattern pattern = Pattern.compile("<saml:AuthnContextClassRef>(.+?)</saml:AuthnContextClassRef>");
-            Matcher matcher = pattern.matcher(saml_decoded);
-            matcher.find();
-            String loa = matcher.group(1);
+            String loa = getLoA(context);
 
             log.info("LoA: " + loa);
             context.setProperty("LoA", loa);
 
             AuthenticatedUser authenticatedUser = (AuthenticatedUser) context.getProperty(EmailOTPAuthenticatorConstants.AUTHENTICATED_USER);
-            saveAuthenticatedUser(authenticatedUser, context);
+            saveAuthenticatedUser(authenticatedUser, context);         
 
             if(loa.equals(LOA2)) {
                 // it's ok 
@@ -193,6 +204,22 @@ public class EmailOTPLoA3Authenticator extends EmailOTPAuthenticator implements 
             log.info("EXCEPTION: " + e.toString());
             throw new AuthenticationFailedException(e.getMessage(), e);
         }
+    }
+
+    private String getLoA(AuthenticationContext context) {
+        String loa = "";
+        try {
+            String saml = context.getAuthenticationRequest().getRequestQueryParam("SAMLRequest")[0];
+            String saml_decoded = SAMLSSOUtil.decode(saml);
+            Pattern pattern = Pattern.compile("<saml:AuthnContextClassRef>(.+?)</saml:AuthnContextClassRef>");
+            Matcher matcher = pattern.matcher(saml_decoded);
+            matcher.find();
+            loa = matcher.group(1);  
+        
+        } catch(Exception e) {
+            log.info("EXCEPTION: " + e.toString());
+        }
+        return loa;      
     }
 
     private void saveAuthenticatedUser(AuthenticatedUser authenticatedUser, AuthenticationContext context) {
